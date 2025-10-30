@@ -1,0 +1,83 @@
+
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+-- Function to copy text to clipboard
+local function copyToClipboard(text)
+    local clipboard = setclipboard or toclipboard or set_clipboard or (Clipboard and Clipboard.set)
+    
+    if clipboard then
+        clipboard(text)
+        print("✓ Copied to clipboard: " .. text)
+    else
+        -- Fallback: show the text in a message box
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Coordinates",
+            Text = text,
+            Duration = 5
+        })
+        print("Coordinates: " .. text)
+        print("Note: Clipboard not available in this environment")
+    end
+end
+
+-- Main click handler
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end 
+    
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local mouseLocation = UserInputService:GetMouseLocation()
+        local coordinates = string.format("X = %d, Y = %d", mouseLocation.X, mouseLocation.Y)
+        
+        -- Print to output
+        print("Clicked at: " .. coordinates)
+        
+        -- Copy to clipboard
+        copyToClipboard(coordinates)
+        
+        -- Optional: Show visual feedback
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Coordinates Copied!",
+            Text = coordinates,
+            Duration = 3
+        })
+    end
+end)
+
+-- Additional feature: Get coordinates with a key press (e.g., F3)
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    
+    if input.KeyCode == Enum.KeyCode.F3 then
+        local mouseLocation = UserInputService:GetMouseLocation()
+        local coordinates = string.format("X = %d, Y = %d", mouseLocation.X, mouseLocation.Y)
+        
+        print("Current mouse position: " .. coordinates)
+        copyToClipboard(coordinates)
+        
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Position Captured (F3)",
+            Text = coordinates,
+            Duration = 3
+        })
+    end
+end)
+
+-- Real-time coordinate display (optional - shows in output)
+local function startCoordinateTracker()
+    while true do
+        wait(0.1) -- Update every 0.1 seconds
+        local mouseLocation = UserInputService:GetMouseLocation()
+        print(string.format("Mouse Position: X = %d, Y = %d", mouseLocation.X, mouseLocation.Y))
+    end
+end
+
+-- Uncomment the line below if you want real-time tracking in output
+-- startCoordinateTracker()
+
+print("Coordinate tracker loaded!")
+print("Left click to copy coordinates to clipboard")
+print("Press F3 to capture current mouse position")
+print("Coordinates will be copied automatically")
