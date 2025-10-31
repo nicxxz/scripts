@@ -1,0 +1,126 @@
+-- use F to aim
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+local AimPart = "HumanoidRootPart"
+local AimbotEnabled = false
+local CurrentTarget = nil
+
+-- GUI Setup
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.ResetOnSpawn = false
+
+-- Locked On Box
+local lockBox = Instance.new("TextLabel")
+lockBox.Size = UDim2.new(0, 200, 0, 40)
+lockBox.Position = UDim2.new(1, -210, 0, -50)
+lockBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- matte black
+lockBox.BorderSizePixel = 2
+lockBox.BorderColor3 = Color3.new(0, 0, 0) -- black outline
+lockBox.TextColor3 = Color3.new(1, 1, 1)
+lockBox.TextScaled = true
+lockBox.Font = Enum.Font.Arcade
+lockBox.Text = ""
+lockBox.Visible = false
+lockBox.Parent = gui
+
+-- Tween to show/hide
+local function showLockBox(name)
+	lockBox.Text = "🎯 Locked on \"" .. name .. "\""
+	lockBox.Visible = true
+	local tween = TweenService:Create(lockBox, TweenInfo.new(0.4), {Position = UDim2.new(1, -210, 0, 10)})
+	tween:Play()
+end
+
+local function hideLockBox()
+	local tween = TweenService:Create(lockBox, TweenInfo.new(0.4), {Position = UDim2.new(1, -210, 0, -50)})
+	tween:Play()
+	task.delay(0.5, function()
+		lockBox.Visible = false
+	end)
+end
+
+-- Get closest player
+local function getClosest()
+	local closest = nil
+	local shortest = math.huge
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild(AimPart) then
+			local part = p.Character[AimPart]
+			local pos, visible = Camera:WorldToViewportPoint(part.Position)
+			if visible then
+				local dist = (Vector2.new(pos.X, pos.Y) - Camera.ViewportSize / 2).Magnitude
+				if dist < shortest then
+					shortest = dist
+					closest = p
+				end
+			end
+		end
+	end
+	return closest
+end
+
+-- Blatant Aimbot
+RunService.RenderStepped:Connect(function()
+	if AimbotEnabled then
+		local target = getClosest()
+		if target and target.Character and target.Character:FindFirstChild(AimPart) then
+			local targetPos = target.Character[AimPart].Position
+			local camPos = Camera.CFrame.Position
+			local currentDir = Camera.CFrame.LookVector
+			local targetDir = (targetPos - camPos).Unit
+
+			-- More blatant smooth lock
+			local lerped = currentDir:Lerp(targetDir, 0.35) -- faster lock
+			Camera.CFrame = CFrame.new(camPos, camPos + lerped)
+
+			if target ~= CurrentTarget then
+				CurrentTarget = target
+				showLockBox(target.DisplayName)
+			end
+		else
+			if CurrentTarget then
+				CurrentTarget = nil
+				hideLockBox()
+			end
+		end
+	elseif CurrentTarget then
+		CurrentTarget = nil
+		hideLockBox()
+	end
+end)
+
+-- Toggle Button
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(0, 120, 0, 40)
+toggle.Position = UDim2.new(0, 10, 0, 10)
+toggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- matte black
+toggle.BorderColor3 = Color3.new(0, 0, 0)
+toggle.BorderSizePixel = 2
+toggle.TextColor3 = Color3.new(1, 1, 1)
+toggle.Text = "🎯 Nics Aim OFF"
+toggle.TextScaled = true
+toggle.Font = Enum.Font.Arcade
+toggle.Active = true
+toggle.Draggable = true
+toggle.Parent = gui
+
+toggle.MouseButton1Click:Connect(function()
+	AimbotEnabled = not AimbotEnabled
+	toggle.Text = AimbotEnabled and "🎯 Nics Aim ON" or "🎯 Nics Aim OFF"
+end)
+
+-- Keybind Toggle (F key)
+local UserInputService = game:GetService("UserInputService")
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.F then
+		AimbotEnabled = not AimbotEnabled
+		toggle.Text = AimbotEnabled and "🎯 Nics Aim ON" or "🎯 Nics Aim OFF"
+	end
+end)
